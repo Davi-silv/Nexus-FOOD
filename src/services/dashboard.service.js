@@ -3,10 +3,11 @@ import { getInventoryStats, listStockPositions } from '@/services/inventory.serv
 import { getWasteStats } from '@/services/waste.service.js';
 import { listRecipes } from '@/services/recipes.service.js';
 import { listProducts } from '@/services/products.service.js';
-import { DEMO_DASHBOARD } from '@/data/demo.js';
+import { DEMO_DASHBOARD, isDemoCompany } from '@/data/demo.js';
 
 /**
- * Agrega KPIs reais do restaurante. Completa com demo quando faltar volume.
+ * Agrega KPIs reais do restaurante.
+ * Fallback DEMO_DASHBOARD só para a empresa de demonstração (showcase).
  */
 export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
   if (!companyId) return { ...DEMO_DASHBOARD, source: 'empty' };
@@ -18,6 +19,7 @@ export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
   const products = listProducts(companyId).filter((p) => p.status === 'active');
   const positions = listStockPositions(companyId);
   const txs = listTransactions(companyId);
+  const useDemoFallback = isDemoCompany(companyId);
 
   const incomeTxMonth = txs.filter((t) => t.type === 'income' && isCurrentMonth(t.date));
   const ordersProxy = Math.max(incomeTxMonth.length, 1);
@@ -26,7 +28,9 @@ export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
   const avgCmv =
     recipes.length > 0
       ? recipes.reduce((s, r) => s + (r.cmvPercent || 0), 0) / recipes.length
-      : DEMO_DASHBOARD.cmvPercent;
+      : useDemoFallback
+        ? DEMO_DASHBOARD.cmvPercent
+        : 0;
 
   const topMargin = [...recipes]
     .sort((a, b) => b.marginPercent - a.marginPercent)
@@ -40,7 +44,7 @@ export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
 
   const topSold = products.slice(0, 4).map((p, i) => {
     const recipe = recipes.find((r) => r.productId === p.id);
-    const qty = 80 + (4 - i) * 40;
+    const qty = useDemoFallback ? 80 + (4 - i) * 40 : 0;
     return {
       name: p.name,
       qty,
@@ -72,25 +76,32 @@ export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
   const hasRealRevenue = revenueSeries.some((d) => d.value > 0);
 
   return {
-    revenueToday: finance.incomeToday || DEMO_DASHBOARD.revenueToday,
-    revenueMonth: finance.incomeMonth || DEMO_DASHBOARD.revenueMonth,
-    ordersToday: txs.filter((t) => t.type === 'income' && isToday(t.date)).length || DEMO_DASHBOARD.ordersToday,
-    avgTicket: avgTicket || DEMO_DASHBOARD.avgTicket,
-    costsMonth: finance.expenseMonth || DEMO_DASHBOARD.costsMonth,
+    revenueToday: finance.incomeToday || (useDemoFallback ? DEMO_DASHBOARD.revenueToday : 0),
+    revenueMonth: finance.incomeMonth || (useDemoFallback ? DEMO_DASHBOARD.revenueMonth : 0),
+    ordersToday:
+      txs.filter((t) => t.type === 'income' && isToday(t.date)).length ||
+      (useDemoFallback ? DEMO_DASHBOARD.ordersToday : 0),
+    avgTicket: avgTicket || (useDemoFallback ? DEMO_DASHBOARD.avgTicket : 0),
+    costsMonth: finance.expenseMonth || (useDemoFallback ? DEMO_DASHBOARD.costsMonth : 0),
     grossProfitMonth:
       finance.incomeMonth || finance.expenseMonth
         ? finance.balanceMonth
-        : DEMO_DASHBOARD.grossProfitMonth,
+        : useDemoFallback
+          ? DEMO_DASHBOARD.grossProfitMonth
+          : 0,
     cmvPercent: avgCmv,
-    wasteMonth: waste.month || DEMO_DASHBOARD.wasteMonth,
-    stockValue: inventory.stockValue || DEMO_DASHBOARD.stockValue,
-    payablesPending: finance.payablesPending || DEMO_DASHBOARD.payablesPending,
-    receivablesPending: finance.receivablesPending,
-    revenueSeries: hasRealRevenue ? revenueSeries : DEMO_DASHBOARD.revenueSeries,
-    topSold: topSold.length ? topSold : DEMO_DASHBOARD.topSold,
-    topMargin: topMargin.length ? topMargin : DEMO_DASHBOARD.topMargin,
-    criticalStock: criticalStock.length ? criticalStock : DEMO_DASHBOARD.criticalStock,
-    alerts: alerts.length ? alerts : DEMO_DASHBOARD.alerts,
+    wasteMonth: waste.month || (useDemoFallback ? DEMO_DASHBOARD.wasteMonth : 0),
+    stockValue: inventory.stockValue || (useDemoFallback ? DEMO_DASHBOARD.stockValue : 0),
+    payablesPending:
+      finance.payablesPending || (useDemoFallback ? DEMO_DASHBOARD.payablesPending : 0),
+    receivablesPending: finance.receivablesPending || 0,
+    revenueSeries:
+      hasRealRevenue || !useDemoFallback ? revenueSeries : DEMO_DASHBOARD.revenueSeries,
+    topSold: topSold.length || !useDemoFallback ? topSold : DEMO_DASHBOARD.topSold,
+    topMargin: topMargin.length || !useDemoFallback ? topMargin : DEMO_DASHBOARD.topMargin,
+    criticalStock:
+      criticalStock.length || !useDemoFallback ? criticalStock : DEMO_DASHBOARD.criticalStock,
+    alerts: alerts.length || !useDemoFallback ? alerts : DEMO_DASHBOARD.alerts,
     source: 'live',
   };
 }

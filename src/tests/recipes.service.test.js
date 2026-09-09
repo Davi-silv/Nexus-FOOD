@@ -11,8 +11,9 @@ import {
 } from '@/services/recipes.service.js';
 import { calcRecipeCost, calcRecipeMetrics } from '@/services/recipe.service.js';
 import { validateRecipe } from '@/validations/recipe.validation.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
-const COMPANY = 'company_recipe_test';
+const COMPANY = DEMO_COMPANY.id;
 
 function ensureSeed() {
   resetRecipes(COMPANY);

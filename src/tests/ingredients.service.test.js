@@ -7,9 +7,11 @@ import {
   updateIngredient,
 } from '@/services/ingredients.service.js';
 import { validateIngredient, getStockLevel } from '@/validations/ingredient.validation.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
 const COMPANY_A = 'company_test_a';
 const COMPANY_B = 'company_test_b';
+const DEMO = DEMO_COMPANY.id;
 
 describe('validateIngredient', () => {
   it('exige nome e unidade válida', () => {
@@ -51,16 +53,23 @@ describe('ingredients.service multiempresa', () => {
   beforeEach(() => {
     resetIngredients(COMPANY_A);
     resetIngredients(COMPANY_B);
+    resetIngredients(DEMO);
     localStorage.clear();
   });
 
-  it('faz seed isolado por empresa', () => {
+  it('seed demo só na empresa de demonstração; cliente novo começa vazio', () => {
+    const demo = listIngredients(DEMO);
+    const a = listIngredients(COMPANY_A);
+    expect(demo.length).toBeGreaterThan(0);
+    expect(demo.every((r) => r.companyId === DEMO)).toBe(true);
+    expect(a).toHaveLength(0);
+  });
+
+  it('cadastro novo fica isolado e sem catálogo demo', () => {
     const a = listIngredients(COMPANY_A);
     const b = listIngredients(COMPANY_B);
-    expect(a.length).toBeGreaterThan(0);
-    expect(b.length).toBeGreaterThan(0);
-    expect(a.every((r) => r.companyId === COMPANY_A)).toBe(true);
-    expect(b.every((r) => r.companyId === COMPANY_B)).toBe(true);
+    expect(a).toHaveLength(0);
+    expect(b).toHaveLength(0);
   });
 
   it('cadastra, edita e desativa ingrediente', () => {

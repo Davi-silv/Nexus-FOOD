@@ -66,8 +66,20 @@ Ver [ARCHITECTURE.md](./ARCHITECTURE.md).
 | Configurações (CMV / perfil) | ✅ |
 | Identidade visual por empresa | ✅ |
 | Cadastro público de novos usuários | ✅ |
+| PWA responsivo | ✅ |
 
-## Segurança
+## PWA
+
+O app é instalável (Progressive Web App):
+
+```bash
+npm run build && npm run preview
+```
+
+- Manifest + service worker (cache de assets / fontes)
+- Ícones em `public/icons/`
+- Banner “Instalar” no Chrome/Edge/Android
+- Layout adaptado a mobile, tablet e desktop (safe-area em notch)
 
 ```bash
 npm run test:security

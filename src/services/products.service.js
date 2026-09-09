@@ -1,4 +1,4 @@
-import { DEMO_PRODUCTS } from '@/data/demo.js';
+import { DEMO_PRODUCTS, isDemoCompany } from '@/data/demo.js';
 import { assertCompanyScope } from '@/services/company.service.js';
 import { emitProductPriceChanged } from '@/services/domain-events.js';
 import { validateProduct } from '@/validations/product.validation.js';
@@ -42,7 +42,7 @@ export function listProducts(companyId) {
   if (!companyId) return [];
   let rows = readAll(companyId);
   if (rows === null) {
-    rows = seedForCompany(companyId);
+    rows = isDemoCompany(companyId) ? seedForCompany(companyId) : [];
     writeAll(companyId, rows);
   }
   return rows

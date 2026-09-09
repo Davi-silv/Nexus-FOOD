@@ -423,6 +423,19 @@
   padding: 1.1rem 1.4rem 0.4rem;
 }
 
+.topbar__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .topbar__menu {
   display: none;
   border: 1px solid var(--line);
@@ -1159,3 +1172,213 @@ label.field select,
 label.field textarea {
   color: var(--ink);
 }
+
+/* ——— PWA install banner ——— */
+.pwa-banner {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 1.5rem));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.pwa-banner__text {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.pwa-banner__text span {
+  line-height: 1.35;
+}
+
+.pwa-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.pwa-banner__close {
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 8px;
+}
+
+.pwa-banner__close:hover {
+  background: var(--bg-muted);
+}
+
+.pwa-download-btn {
+  white-space: nowrap;
+}
+
+.login-pwa-row {
+  margin-top: 0.85rem;
+}
+
+.pwa-hint__steps {
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.pwa-hint__steps li + li {
+  margin-top: 0.45rem;
+}
+
+.pwa-hint__steps code {
+  font-size: 0.8rem;
+  background: var(--bg-muted);
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+}
+
+.inline-icon {
+  display: inline;
+  vertical-align: -2px;
+}
+
+/* ——— Extra responsive breakpoints ——— */
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0.85rem 1rem 0.35rem;
+  }
+
+  .page {
+    padding: 0.65rem 1rem 5.5rem;
+  }
+
+  .topbar__titles h1 {
+    font-size: 1.35rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.65rem;
+  }
+
+  .kpi-card__value {
+    font-size: 1.3rem;
+  }
+
+  .segmented {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .segmented button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    margin: 0 -0.25rem;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 560px;
+  }
+
+  .modal {
+    width: min(100vw - 1rem, 560px);
+    max-height: min(92dvh, 900px);
+    margin: 0.5rem;
+  }
+
+  .chart-wrap {
+    min-height: 220px;
+  }
+
+  .topbar__actions .pwa-download-btn {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .topbar__actions .pwa-download-btn span,
+  .topbar__actions .pwa-download-btn {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 1rem;
+    align-items: stretch;
+  }
+
+  .login-card,
+  .login-card--wide {
+    width: 100%;
+    border-radius: 18px;
+    padding: 1.25rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .btn--md {
+    padding: 0.7rem 1rem;
+  }
+
+  .pwa-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pwa-banner__actions {
+    justify-content: flex-end;
+  }
+
+  .brand-presets {
+    gap: 0.4rem;
+  }
+
+  .brand-preset span:last-child {
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .page {
+    max-width: 1280px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .pwa-banner {
+    display: none;
+  }
+
+  .topbar {
+    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  }
+}
+

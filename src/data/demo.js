@@ -15,6 +15,11 @@ export const DEMO_COMPANY = {
   idealCmv: 32,
 };
 
+/** Seed de catálogo/financeiro só para a empresa de demonstração. */
+export function isDemoCompany(companyId) {
+  return companyId === DEMO_COMPANY.id;
+}
+
 export const DEMO_USERS = {
   admin: {
     id: 'user_demo_admin',

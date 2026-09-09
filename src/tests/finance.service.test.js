@@ -15,8 +15,9 @@ import { listRecipes, resetRecipes } from '@/services/recipes.service.js';
 import { resetInventoryMovements } from '@/services/inventory.service.js';
 import { resetSuppliers, listSuppliers } from '@/services/suppliers.service.js';
 import { resetWaste } from '@/services/waste.service.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
-const COMPANY = 'company_finance_test';
+const COMPANY = DEMO_COMPANY.id;
 
 async function boot() {
   await import('@/services/inventory.service.js');

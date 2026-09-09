@@ -21,8 +21,9 @@ import {
   listWasteRecords,
   resetWaste,
 } from '@/services/waste.service.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
-const COMPANY = 'company_ops_flow';
+const COMPANY = DEMO_COMPANY.id;
 
 async function boot() {
   await import('@/services/inventory.service.js');

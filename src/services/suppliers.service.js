@@ -1,3 +1,4 @@
+import { isDemoCompany } from '@/data/demo.js';
 import { assertCompanyScope } from '@/services/company.service.js';
 import { listIngredients } from '@/services/ingredients.service.js';
 import { validateSupplier } from '@/validations/supplier.validation.js';
@@ -122,10 +123,15 @@ export function listSuppliers(companyId) {
   if (!companyId) return [];
   let rows = readJson(suppliersKey(companyId), null);
   if (rows === null) {
-    rows = seedSuppliers(companyId);
-    writeSuppliers(companyId, rows);
-    const history = seedPriceHistory(companyId);
-    writePriceHistory(companyId, history);
+    if (isDemoCompany(companyId)) {
+      rows = seedSuppliers(companyId);
+      writeSuppliers(companyId, rows);
+      writePriceHistory(companyId, seedPriceHistory(companyId));
+    } else {
+      rows = [];
+      writeSuppliers(companyId, rows);
+      writePriceHistory(companyId, []);
+    }
   }
   return rows
     .filter((r) => r.companyId === companyId)

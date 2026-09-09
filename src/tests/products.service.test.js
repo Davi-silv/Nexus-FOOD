@@ -7,9 +7,11 @@ import {
   updateProduct,
 } from '@/services/products.service.js';
 import { validateProduct } from '@/validations/product.validation.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
 const COMPANY_A = 'company_prod_a';
 const COMPANY_B = 'company_prod_b';
+const DEMO = DEMO_COMPANY.id;
 
 describe('validateProduct', () => {
   it('exige nome, categoria e preço válido', () => {
@@ -44,15 +46,16 @@ describe('products.service multiempresa', () => {
   beforeEach(() => {
     resetProducts(COMPANY_A);
     resetProducts(COMPANY_B);
+    resetProducts(DEMO);
     localStorage.clear();
   });
 
-  it('seed isolado por empresa', () => {
+  it('seed demo só na empresa de demonstração; cliente novo começa vazio', () => {
+    const demo = listProducts(DEMO);
     const a = listProducts(COMPANY_A);
-    const b = listProducts(COMPANY_B);
-    expect(a.some((p) => p.name === 'X-Bacon')).toBe(true);
-    expect(a.every((p) => p.companyId === COMPANY_A)).toBe(true);
-    expect(b.every((p) => p.companyId === COMPANY_B)).toBe(true);
+    expect(demo.some((p) => p.name === 'X-Bacon')).toBe(true);
+    expect(demo.every((p) => p.companyId === DEMO)).toBe(true);
+    expect(a).toHaveLength(0);
   });
 
   it('cadastra, edita e desativa', () => {

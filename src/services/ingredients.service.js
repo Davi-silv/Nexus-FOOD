@@ -1,4 +1,4 @@
-import { DEMO_INGREDIENTS } from '@/data/demo.js';
+import { DEMO_INGREDIENTS, isDemoCompany } from '@/data/demo.js';
 import { assertCompanyScope } from '@/services/company.service.js';
 import {
   emitIngredientCostChanged,
@@ -43,13 +43,14 @@ function seedForCompany(companyId) {
 }
 
 /**
- * Lista ingredientes da empresa. Faz seed demo na primeira carga.
+ * Lista ingredientes da empresa.
+ * Seed demo só na empresa de demonstração; clientes novos começam vazios.
  */
 export function listIngredients(companyId) {
   if (!companyId) return [];
   let rows = readAll(companyId);
   if (rows === null) {
-    rows = seedForCompany(companyId);
+    rows = isDemoCompany(companyId) ? seedForCompany(companyId) : [];
     writeAll(companyId, rows);
   }
   return rows

@@ -17,8 +17,9 @@ import {
   resetInventoryMovements,
 } from '@/services/inventory.service.js';
 import { validateInventoryMovement } from '@/validations/inventory.validation.js';
+import { DEMO_COMPANY } from '@/data/demo.js';
 
-const COMPANY = 'company_stock_test';
+const COMPANY = DEMO_COMPANY.id;
 
 async function boot() {
   await import('@/services/inventory.service.js');

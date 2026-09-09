@@ -1,3 +1,4 @@
+import { isDemoCompany } from '@/data/demo.js';
 import { assertCompanyScope } from '@/services/company.service.js';
 import {
   validateFinanceCategory,
@@ -135,17 +136,26 @@ function seedReceivables(companyId) {
 }
 
 function ensureSeed(companyId) {
+  // Categorias base em qualquer empresa; lançamentos demo só na conta de demonstração.
   if (read(companyId, 'categories', null) === null) {
     write(companyId, 'categories', seedCategories(companyId));
   }
   if (read(companyId, 'transactions', null) === null) {
-    write(companyId, 'transactions', seedTransactions(companyId));
+    write(
+      companyId,
+      'transactions',
+      isDemoCompany(companyId) ? seedTransactions(companyId) : [],
+    );
   }
   if (read(companyId, 'payables', null) === null) {
-    write(companyId, 'payables', seedPayables(companyId));
+    write(companyId, 'payables', isDemoCompany(companyId) ? seedPayables(companyId) : []);
   }
   if (read(companyId, 'receivables', null) === null) {
-    write(companyId, 'receivables', seedReceivables(companyId));
+    write(
+      companyId,
+      'receivables',
+      isDemoCompany(companyId) ? seedReceivables(companyId) : [],
+    );
   }
 }
 

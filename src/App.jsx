@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext.jsx';
 import { ToastProvider } from '@/contexts/ToastContext.jsx';
 import { ProtectedRoute } from '@/components/routing/ProtectedRoute.jsx';
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner.jsx';
 import { LoginPage } from '@/pages/auth/LoginPage.jsx';
 import { RegisterPage } from '@/pages/auth/RegisterPage.jsx';
 import { DashboardPage } from '@/pages/restaurant/DashboardPage.jsx';
@@ -30,6 +31,7 @@ export default function App() {
     <AuthProvider>
       <ToastProvider>
         <BrowserRouter>
+          <PwaInstallBanner />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cadastro" element={<RegisterPage />} />

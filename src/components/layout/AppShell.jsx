@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { cn } from '@/core/utils/helpers.js';
 import { resolveCompanyBrand } from '@/services/branding.service.js';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
 
 export function AppShell({ children, title, subtitle }) {
   const { user, company, logout, isPlatformAdmin, canAccess } = useAuth();
@@ -87,6 +88,7 @@ export function AppShell({ children, title, subtitle }) {
             <strong>{user?.name}</strong>
             <span>{user?.email}</span>
           </div>
+          <PwaInstallButton variant="secondary" className="w-full" label="Baixar aplicativo" />
           <Button variant="ghost" className="w-full" onClick={handleLogout}>
             <LogOut size={16} />
             Sair
@@ -102,6 +104,9 @@ export function AppShell({ children, title, subtitle }) {
           <div className="topbar__titles">
             <h1>{title}</h1>
             {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+          <div className="topbar__actions">
+            <PwaInstallButton />
           </div>
         </header>
         <main className="page">{children}</main>

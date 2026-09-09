@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button.jsx';
 import { isPlatformAdmin } from '@/config/roles.config.js';
 import { PLANS } from '@/config/plans.config.js';
 import { SEGMENT_OPTIONS } from '@/services/settings.service.js';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
 
 const EMPTY = {
   ownerName: '',
@@ -178,6 +179,10 @@ export function RegisterPage() {
             Criar minha conta
           </Button>
         </form>
+
+        <div className="login-pwa-row">
+          <PwaInstallButton variant="secondary" className="w-full" label="Baixar aplicativo (PWA)" />
+        </div>
 
         <p className="auth-switch">
           Já tem conta? <Link to="/login">Entrar</Link>

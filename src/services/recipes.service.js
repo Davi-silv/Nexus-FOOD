@@ -1,4 +1,4 @@
-import { DEMO_RECIPES } from '@/data/demo.js';
+import { DEMO_RECIPES, isDemoCompany } from '@/data/demo.js';
 import { assertCompanyScope } from '@/services/company.service.js';
 import {
   registerIngredientCostHandler,
@@ -126,7 +126,7 @@ function readRawRecipes(companyId) {
   if (!companyId) return [];
   let rows = readJson(recipesKey(companyId), null);
   if (rows === null) {
-    rows = seedForCompany(companyId);
+    rows = isDemoCompany(companyId) ? seedForCompany(companyId) : [];
     writeRecipes(companyId, rows);
   }
   return Array.isArray(rows) ? rows.filter((r) => r.companyId === companyId) : [];

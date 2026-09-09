@@ -3,6 +3,12 @@ import { clearSession, login, register, loadStoredSession } from '@/services/aut
 import { findAuthUserByEmail } from '@/services/users.service.js';
 import { getCompanyProfile } from '@/services/settings.service.js';
 import { listPlatformCompanies, resetPlatformDemo } from '@/services/platform.service.js';
+import { listIngredients } from '@/services/ingredients.service.js';
+import { listProducts } from '@/services/products.service.js';
+import { listRecipes } from '@/services/recipes.service.js';
+import { listSuppliers } from '@/services/suppliers.service.js';
+import { listTransactions, listPayables } from '@/services/finance.service.js';
+import { getRestaurantDashboard } from '@/services/dashboard.service.js';
 import { ROLES } from '@/config/roles.config.js';
 
 describe('auth.register', () => {
@@ -39,6 +45,33 @@ describe('auth.register', () => {
     clearSession();
     const again = await login({ email: 'joao@novaburger.local', password: 'senha123' });
     expect(again.company.id).toBe(result.company.id);
+  });
+
+  it('cliente novo abre o sistema zerado (sem catálogo/financeiro demo)', async () => {
+    const result = await register({
+      ownerName: 'Maria',
+      email: 'maria@zerada.local',
+      password: 'senha123',
+      passwordConfirm: 'senha123',
+      tradeName: 'Burger Zerado',
+      name: 'Burger Zerado Ltda',
+      segment: 'hamburgueria',
+    });
+
+    const cid = result.company.id;
+    expect(listIngredients(cid)).toHaveLength(0);
+    expect(listProducts(cid)).toHaveLength(0);
+    expect(listRecipes(cid)).toHaveLength(0);
+    expect(listSuppliers(cid)).toHaveLength(0);
+    expect(listTransactions(cid)).toHaveLength(0);
+    expect(listPayables(cid)).toHaveLength(0);
+
+    const dash = getRestaurantDashboard(cid, { idealCmv: 32 });
+    expect(dash.revenueToday).toBe(0);
+    expect(dash.revenueMonth).toBe(0);
+    expect(dash.stockValue).toBe(0);
+    expect(dash.alerts).toHaveLength(0);
+    expect(dash.topSold).toHaveLength(0);
   });
 
   it('rejeita e-mail duplicado e senhas diferentes', async () => {

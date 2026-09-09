@@ -5,12 +5,13 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { isPlatformAdmin } from '@/config/roles.config.js';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
 
 export function LoginPage() {
   const { login, isAuthenticated, user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@nexusfood.local');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -67,6 +68,10 @@ export function LoginPage() {
             Entrar
           </Button>
         </form>
+
+        <div className="login-pwa-row">
+          <PwaInstallButton variant="secondary" className="w-full" label="Baixar aplicativo (PWA)" />
+        </div>
 
         <p className="auth-switch">
           Novo por aqui? <Link to="/cadastro">Criar conta do restaurante</Link>
