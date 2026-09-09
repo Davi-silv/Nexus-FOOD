@@ -234,7 +234,7 @@ export function RecipesPage() {
             title={selected ? selected.productName : 'Detalhe da ficha'}
             subtitle={
               selected
-                ? 'Composição e indicadores de lucro'
+                ? `${formatMoney(selected.totalCost)} de custo · margem ${formatPercent(selected.marginPercent)}`
                 : 'Selecione um produto à esquerda'
             }
             action={selected ? <BookOpen size={18} className="muted" /> : null}
@@ -270,17 +270,31 @@ export function RecipesPage() {
                 </div>
                 <div>
                   <span>CMV</span>
-                  <strong>{formatPercent(selected.cmvPercent)}</strong>
+                  <strong
+                    className={
+                      selected.cmvPercent > (company?.idealCmv || 32) ? 'text-cost' : 'text-profit'
+                    }
+                  >
+                    {formatPercent(selected.cmvPercent)}
+                  </strong>
                 </div>
               </div>
+
+              <p className="recipe-insight mt-3">
+                {selected.productName} custa aproximadamente{' '}
+                <strong>{formatMoney(selected.totalCost)}</strong> para produzir. Com preço de{' '}
+                <strong>{formatMoney(selected.salePrice)}</strong>, a margem bruta estimada é{' '}
+                <strong>{formatPercent(selected.marginPercent)}</strong>.
+              </p>
 
               <div className="table-wrap mt-4">
                 <table>
                   <thead>
                     <tr>
                       <th>Ingrediente</th>
-                      <th>Qtd</th>
+                      <th>Qtd na ficha</th>
                       <th>Custo unit.</th>
+                      <th>Qtd convertida</th>
                       <th>Custo linha</th>
                     </tr>
                   </thead>
@@ -289,15 +303,21 @@ export function RecipesPage() {
                       <tr key={`${selected.id}-${line.ingredientId}`}>
                         <td>
                           {line.ingredientName}
-                          {line.missing ? (
-                            <Badge tone="danger">Ausente</Badge>
-                          ) : null}
+                          {line.missing ? <Badge tone="danger">Ausente</Badge> : null}
+                          {line.conversionError ? <Badge tone="danger">Unidade</Badge> : null}
                         </td>
                         <td>
                           {line.quantity} {line.unit}
                         </td>
                         <td>
                           {formatMoney(line.unitCost)}/{line.ingredientUnit}
+                        </td>
+                        <td>
+                          {line.qtyConverted == null
+                            ? '—'
+                            : `${Number(line.qtyConverted).toLocaleString('pt-BR', {
+                                maximumFractionDigits: 4,
+                              })} ${line.ingredientUnit}`}
                         </td>
                         <td>{formatMoney(line.lineCost)}</td>
                       </tr>
@@ -372,6 +392,7 @@ export function RecipesPage() {
           ingredients={ingredients}
           productsWithRecipe={productsWithRecipe}
           fieldErrors={fieldErrors}
+          idealCmv={company?.idealCmv || 32}
           onSubmit={handleSave}
           onCancel={closeModal}
           loading={saving}

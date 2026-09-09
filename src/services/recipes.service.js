@@ -7,7 +7,7 @@ import {
 import { listIngredients } from '@/services/ingredients.service.js';
 import { getProduct, listProducts } from '@/services/products.service.js';
 import {
-  calcRecipeCost,
+  buildRecipeCostBreakdown,
   calcRecipeMetrics,
 } from '@/services/recipe.service.js';
 import { validateRecipe } from '@/validations/recipe.validation.js';
@@ -49,23 +49,23 @@ function buildLines(items, ingredientsById) {
 function enrichRecipe(recipe, productsById, ingredientsById) {
   const product = productsById.get(recipe.productId) || null;
   const lines = buildLines(recipe.items, ingredientsById);
-  const totalCost = calcRecipeCost(lines);
+  const breakdown = buildRecipeCostBreakdown(lines);
   const salePrice = product ? Number(product.salePrice) || 0 : Number(recipe.salePrice) || 0;
-  const metrics = calcRecipeMetrics(salePrice, totalCost);
+  const metrics = calcRecipeMetrics(salePrice, breakdown.totalCost);
 
-  const itemsDetailed = lines.map((line) => {
-    const lineCost = line.ingredient
-      ? calcRecipeCost([line])
-      : 0;
+  const itemsDetailed = breakdown.lines.map((line, index) => {
+    const raw = lines[index] || {};
     return {
-      ingredientId: line.ingredientId,
-      quantity: line.quantity,
-      unit: line.unit,
-      ingredientName: line.ingredient?.name || 'Ingrediente removido',
-      ingredientUnit: line.ingredient?.unit || line.unit,
-      unitCost: line.ingredient ? Number(line.ingredient.currentCost) || 0 : 0,
-      lineCost,
-      missing: !line.ingredient,
+      ingredientId: line.ingredientId || raw.ingredientId,
+      quantity: line.quantity ?? raw.quantity,
+      unit: line.unit || raw.unit,
+      ingredientName: line.ingredientName || raw.ingredient?.name || 'Ingrediente removido',
+      ingredientUnit: line.ingredientUnit || raw.ingredient?.unit || raw.unit,
+      unitCost: line.unitCost ?? (raw.ingredient ? Number(raw.ingredient.currentCost) || 0 : 0),
+      lineCost: line.lineCost || 0,
+      qtyConverted: line.qtyConverted ?? null,
+      missing: Boolean(line.missing),
+      conversionError: line.conversionError || null,
     };
   });
 
@@ -81,6 +81,7 @@ function enrichRecipe(recipe, productsById, ingredientsById) {
     marginPercent: metrics.marginPercent,
     markup: metrics.markup,
     cmvPercent: metrics.cmvPercent,
+    hasConversionErrors: itemsDetailed.some((l) => l.conversionError),
     itemsDetailed,
   };
 }
@@ -193,8 +194,11 @@ export function getRecipeByProduct(companyId, productId) {
 export function saveRecipe(companyId, payload, { recipeId = null } = {}) {
   if (!companyId) throw new Error('Empresa não definida.');
   requireCompanyAccess(companyId);
-  if (!companyId) throw new Error('Empresa não definida.');
-  const validated = validateRecipe(payload);
+
+  const ingredients = listIngredients(companyId);
+  const ingredientsById = new Map(ingredients.map((i) => [i.id, i]));
+
+  const validated = validateRecipe(payload, { ingredientsById });
   if (!validated.ok) {
     const err = new Error('Dados inválidos.');
     err.fieldErrors = validated.errors;
@@ -208,8 +212,6 @@ export function saveRecipe(companyId, payload, { recipeId = null } = {}) {
     throw err;
   }
 
-  const ingredients = listIngredients(companyId);
-  const ingredientsById = new Map(ingredients.map((i) => [i.id, i]));
   for (const item of validated.data.items) {
     const ing = ingredientsById.get(item.ingredientId);
     if (!ing || ing.status === 'inactive') {
@@ -217,6 +219,20 @@ export function saveRecipe(companyId, payload, { recipeId = null } = {}) {
       err.fieldErrors = { items: err.message };
       throw err;
     }
+  }
+
+  // Garante que o custo fecha (unidades conversíveis).
+  try {
+    buildRecipeCostBreakdown(
+      validated.data.items.map((item) => ({
+        ...item,
+        ingredient: ingredientsById.get(item.ingredientId),
+      })),
+    );
+  } catch (err) {
+    const error = new Error(err.message || 'Não foi possível calcular o custo da ficha.');
+    error.fieldErrors = { items: error.message };
+    throw error;
   }
 
   const rows = readRawRecipes(companyId);

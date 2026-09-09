@@ -1,11 +1,13 @@
 import { UNITS } from '@/core/constants.js';
+import { areUnitsCompatible } from '@/services/recipe.service.js';
 
 const UNIT_VALUES = new Set(UNITS.map((u) => u.value));
 
 /**
  * @param {Record<string, unknown>} input
+ * @param {{ ingredientsById?: Map<string, { id: string, unit: string, name?: string }> }} [options]
  */
-export function validateRecipe(input) {
+export function validateRecipe(input, { ingredientsById } = {}) {
   const errors = {};
 
   const productId = String(input.productId ?? '').trim();
@@ -41,6 +43,17 @@ export function validateRecipe(input) {
     }
     if (!UNIT_VALUES.has(unit)) {
       errors[`${prefix}_unit`] = 'Unidade inválida.';
+      return;
+    }
+
+    const ingredient = ingredientsById?.get(ingredientId);
+    if (ingredientsById && !ingredient) {
+      errors[`${prefix}_ingredient`] = 'Ingrediente inválido ou inativo.';
+      return;
+    }
+    if (ingredient && !areUnitsCompatible(unit, ingredient.unit)) {
+      errors[`${prefix}_unit`] =
+        `Unidade incompatível com o estoque (${ingredient.unit}). Use a mesma família (ex.: g/kg).`;
       return;
     }
 
