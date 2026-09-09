@@ -1,0 +1,90 @@
+:root {
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+
+  --bg: #f3f6f4;
+  --bg-elevated: #ffffff;
+  --bg-muted: #e7eeea;
+  --ink: #12201c;
+  --ink-soft: #5b6b66;
+  --line: rgba(18, 32, 28, 0.1);
+
+  --brand: #0f766e;
+  --brand-strong: #0b5f59;
+  --brand-soft: #d9f3ef;
+
+  --profit: #0f766e;
+  --cost: #b45309;
+  --waste: #be123c;
+  --stock: #1d4ed8;
+  --danger: #be123c;
+  --warning: #b45309;
+  --success: #047857;
+  --info: #0369a1;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 30px rgba(18, 32, 28, 0.06);
+  --sidebar-width: 272px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(180, 83, 9, 0.08), transparent 50%),
+    var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+.mt-3 { margin-top: 0.75rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.w-full { width: 100%; }
+
+.prose {
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.prose.muted,
+.muted {
+  color: var(--ink-soft);
+}
