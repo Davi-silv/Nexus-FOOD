@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext.jsx';
 import { ToastProvider } from '@/contexts/ToastContext.jsx';
-import { ProtectedRoute } from '@/components/routing/ProtectedRoute.jsx';
+import { GuestRoute, ProtectedRoute } from '@/components/routing/ProtectedRoute.jsx';
 import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner.jsx';
 import { LoginPage } from '@/pages/auth/LoginPage.jsx';
 import { RegisterPage } from '@/pages/auth/RegisterPage.jsx';
@@ -33,11 +33,26 @@ export default function App() {
         <BrowserRouter>
           <PwaInstallBanner />
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/cadastro" element={<RegisterPage />} />
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <LoginPage />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/cadastro"
+              element={
+                <GuestRoute>
+                  <RegisterPage />
+                </GuestRoute>
+              }
+            />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
             </Route>
 
             <Route element={<ProtectedRoute permission="products" />}>

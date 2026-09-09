@@ -922,6 +922,50 @@ table tr.is-selected {
   border-color: var(--brand);
 }
 
+.login-card__title {
+  margin: 0.35rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.login-password-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.login-password-toggle {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.login-password-toggle:hover {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+
+.login-form-error {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, #dc2626 10%, #fff);
+  border: 1px solid color-mix(in srgb, #dc2626 28%, #fff);
+  color: #991b1b;
+  font-size: 0.86rem;
+}
+
+.auth-switch--muted {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
 .login-demo-hero {
   margin: 0 0 1.15rem;
   padding: 1rem 1.05rem;

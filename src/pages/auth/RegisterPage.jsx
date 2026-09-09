@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { APP_CONFIG } from '@/config/app.config.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
-import { isPlatformAdmin } from '@/config/roles.config.js';
 import { PLANS } from '@/config/plans.config.js';
 import { SEGMENT_OPTIONS } from '@/services/settings.service.js';
 import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
+import { getHomePath } from '@/services/auth.service.js';
 
 const EMPTY = {
   ownerName: '',
@@ -23,16 +23,12 @@ const EMPTY = {
 };
 
 export function RegisterPage() {
-  const { register, isAuthenticated, user } = useAuth();
+  const { register } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const [values, setValues] = useState(EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
-
-  if (isAuthenticated) {
-    return <Navigate to={isPlatformAdmin(user?.role) ? '/admin' : '/'} replace />;
-  }
 
   function setField(key, value) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -43,9 +39,9 @@ export function RegisterPage() {
     setLoading(true);
     setFieldErrors({});
     try {
-      await register(values);
+      const result = await register(values);
       toast.success('Conta criada! Bem-vindo ao Nexus Food.');
-      navigate('/');
+      navigate(getHomePath(result.user), { replace: true });
     } catch (err) {
       if (err.fieldErrors) setFieldErrors(err.fieldErrors);
       toast.error(err.message || 'Não foi possível criar a conta.');

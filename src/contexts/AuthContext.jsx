@@ -1,13 +1,18 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
   clearSession,
-  loadStoredSession,
+  getHomePath,
   login as loginService,
   logout as logoutService,
+  mapAuthError,
   register as registerService,
+  resolvePostLoginPath,
+  restoreSession,
 } from '@/services/auth.service.js';
 import { canAccessModule, isPlatformAdmin } from '@/config/roles.config.js';
 import { STORAGE_KEYS } from '@/core/constants.js';
+import { isSupabaseEnabled } from '@/config/supabase.config.js';
+import { getSupabaseClient } from '@/lib/supabase.js';
 import { applyCompanyBrand, clearCompanyBrand } from '@/services/branding.service.js';
 
 const AuthContext = createContext(null);
@@ -19,16 +24,63 @@ export function AuthProvider({ children }) {
   const [bootError, setBootError] = useState(null);
 
   useEffect(() => {
-    try {
-      const { user: storedUser, company: storedCompany } = loadStoredSession();
-      setUser(storedUser);
-      setCompany(storedCompany);
-    } catch (err) {
-      setBootError(err.message);
-      clearSession();
-    } finally {
-      setLoading(false);
+    let cancelled = false;
+    let unsubscribe = () => {};
+
+    async function boot() {
+      try {
+        const session = await restoreSession();
+        if (cancelled) return;
+        setUser(session.user);
+        setCompany(session.company);
+        setBootError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setBootError(mapAuthError(err));
+        clearSession();
+        setUser(null);
+        setCompany(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+
+    boot();
+
+    if (isSupabaseEnabled) {
+      const client = getSupabaseClient();
+      if (client) {
+        const { data } = client.auth.onAuthStateChange(async (event) => {
+          if (cancelled) return;
+          if (event === 'SIGNED_OUT') {
+            clearSession();
+            setUser(null);
+            setCompany(null);
+            clearCompanyBrand();
+            return;
+          }
+          if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            try {
+              const session = await restoreSession();
+              if (cancelled) return;
+              setUser(session.user);
+              setCompany(session.company);
+            } catch {
+              if (cancelled) return;
+              clearSession();
+              setUser(null);
+              setCompany(null);
+            }
+          }
+        });
+        unsubscribe = () => data.subscription.unsubscribe();
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -40,17 +92,29 @@ export function AuthProvider({ children }) {
   }, [company, user?.role]);
 
   async function login(credentials) {
-    const result = await loginService(credentials);
-    setUser(result.user);
-    setCompany(result.company);
-    return result;
+    try {
+      const result = await loginService(credentials);
+      setUser(result.user);
+      setCompany(result.company);
+      return result;
+    } catch (err) {
+      const friendly = new Error(mapAuthError(err));
+      friendly.fieldErrors = err.fieldErrors;
+      throw friendly;
+    }
   }
 
   async function register(payload) {
-    const result = await registerService(payload);
-    setUser(result.user);
-    setCompany(result.company);
-    return result;
+    try {
+      const result = await registerService(payload);
+      setUser(result.user);
+      setCompany(result.company);
+      return result;
+    } catch (err) {
+      if (err.fieldErrors) throw err;
+      const friendly = new Error(mapAuthError(err));
+      throw friendly;
+    }
   }
 
   async function logout() {
@@ -76,6 +140,8 @@ export function AuthProvider({ children }) {
       bootError,
       isAuthenticated: Boolean(user),
       isPlatformAdmin: isPlatformAdmin(user?.role),
+      homePath: getHomePath(user),
+      resolvePostLoginPath: (from) => resolvePostLoginPath(user, from),
       canAccess: (moduleKey) => canAccessModule(user?.role, user?.permissions, moduleKey),
       login,
       register,

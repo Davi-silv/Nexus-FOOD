@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { APP_CONFIG } from '@/config/app.config.js';
 import { DEMO_USERS } from '@/data/demo.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
-import { isPlatformAdmin } from '@/config/roles.config.js';
 import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
 
 const DEMO_ACCOUNTS = [
@@ -30,22 +29,22 @@ const DEMO_ACCOUNTS = [
 ];
 
 export function LoginPage() {
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, resolvePostLoginPath } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-
-  if (isAuthenticated) {
-    return <Navigate to={isPlatformAdmin(user?.role) ? '/admin' : '/'} replace />;
-  }
+  const [formError, setFormError] = useState('');
 
   async function authenticate(nextEmail, nextPassword) {
+    setFormError('');
     const result = await login({ email: nextEmail, password: nextPassword });
     toast.success('Login realizado com sucesso.');
-    navigate(isPlatformAdmin(result.user.role) ? '/admin' : '/');
+    navigate(resolvePostLoginPath(location.state?.from), { replace: true });
     return result;
   }
 
@@ -55,7 +54,9 @@ export function LoginPage() {
     try {
       await authenticate(email, password);
     } catch (err) {
-      toast.error(err.message || 'Não foi possível entrar.');
+      const message = err.message || 'Não foi possível entrar.';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -68,7 +69,9 @@ export function LoginPage() {
     try {
       await authenticate(DEMO_USERS.admin.email, DEMO_USERS.admin.password);
     } catch (err) {
-      toast.error(err.message || 'Não foi possível abrir a demonstração.');
+      const message = err.message || 'Não foi possível abrir a demonstração.';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setDemoLoading(false);
     }
@@ -81,8 +84,16 @@ export function LoginPage() {
         <div className="login-card__brand">
           <div className="brand-mark brand-mark--lg" />
           <h1>{APP_CONFIG.name}</h1>
-          <p>{APP_CONFIG.slogan}</p>
+          <p className="login-card__title">Bem-vindo de volta</p>
+          <p>Acesse a gestão do seu restaurante.</p>
         </div>
+
+        {location.state?.reason === 'no_company' ? (
+          <p className="login-form-error" role="alert">
+            Sua sessão não está vinculada a um estabelecimento. Entre novamente ou fale com o
+            suporte.
+          </p>
+        ) : null}
 
         {APP_CONFIG.features.demoMode ? (
           <div className="login-demo-hero">
@@ -102,7 +113,7 @@ export function LoginPage() {
           </div>
         ) : null}
 
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={handleSubmit} noValidate>
           <label>
             <span>E-mail</span>
             <input
@@ -115,18 +126,37 @@ export function LoginPage() {
           </label>
           <label>
             <span>Senha</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="login-password-field">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="login-password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              >
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </button>
+            </div>
           </label>
+          {formError ? (
+            <p className="login-form-error" role="alert">
+              {formError}
+            </p>
+          ) : null}
           <Button type="submit" className="w-full" loading={loading} variant="secondary">
-            Entrar com minha conta
+            Entrar
           </Button>
         </form>
+
+        <p className="auth-switch auth-switch--muted">
+          <span>Esqueci minha senha</span> — em breve
+        </p>
 
         <div className="login-pwa-row">
           <PwaInstallButton variant="secondary" className="w-full" label="Baixar aplicativo (PWA)" />
@@ -147,6 +177,7 @@ export function LoginPage() {
                     onClick={() => {
                       setEmail(account.email);
                       setPassword(account.password);
+                      setFormError('');
                     }}
                   >
                     {account.label} → {account.email} / {account.password}

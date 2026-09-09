@@ -13,6 +13,14 @@ import { getCompanyProfile, updateCompanyProfile, SEGMENT_OPTIONS } from '@/serv
 import { createPlatformCompany, registerPlatformUser } from '@/services/platform.service.js';
 import { PLANS } from '@/config/plans.config.js';
 import { uid } from '@/core/utils/helpers.js';
+import {
+  getHomePath,
+  mapAuthError,
+  mapSupabaseUser,
+  resolvePostLoginPath,
+} from '@/services/auth-session.util.js';
+
+export { getHomePath, mapAuthError, resolvePostLoginPath };
 
 function toPublicUser(user) {
   return publicUser(user) || null;
@@ -76,6 +84,10 @@ function finalizeSession(canonical, storedCompany) {
   return { user, company };
 }
 
+/**
+ * Leitura síncrona — modo demo.
+ * Com Supabase, preferir `restoreSession()` (valida token real).
+ */
 export function loadStoredSession() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.session);
@@ -88,6 +100,7 @@ export function loadStoredSession() {
       return sanitizeDemoSession(user, company);
     }
 
+    // Snapshot local só como cache; boot cloud deve chamar restoreSession().
     return { user: toPublicUser(user), company };
   } catch {
     clearSession();
@@ -98,6 +111,116 @@ export function loadStoredSession() {
 export function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.session);
   localStorage.removeItem(STORAGE_KEYS.company);
+}
+
+async function fetchSupabaseMembership(userId) {
+  const client = getSupabaseClient();
+  if (!client || !userId) return null;
+
+  try {
+    const { data: profile } = await client
+      .from('profiles')
+      .select('full_name, is_platform_admin')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile?.is_platform_admin) {
+      return { isPlatformAdmin: true, fullName: profile.full_name };
+    }
+
+    const { data: membership } = await client
+      .from('company_users')
+      .select(
+        'company_id, role, permissions, active, companies ( id, name, trade_name, document, segment, plan_slug, status, ideal_cmv, active )',
+      )
+      .eq('user_id', userId)
+      .eq('active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!membership?.company_id) {
+      return {
+        isPlatformAdmin: false,
+        fullName: profile?.full_name || null,
+        companyId: null,
+        role: ROLES.COMPANY_ADMIN,
+        permissions: null,
+        company: null,
+      };
+    }
+
+    const row = membership.companies;
+    return {
+      isPlatformAdmin: false,
+      fullName: profile?.full_name || null,
+      companyId: membership.company_id,
+      role: membership.role,
+      permissions: membership.permissions || {},
+      company: row
+        ? {
+            id: row.id,
+            name: row.name,
+            tradeName: row.trade_name || row.name,
+            document: row.document || '',
+            segment: row.segment || 'outro',
+            planSlug: row.plan_slug || 'start',
+            status: row.status || 'trial',
+            idealCmv: Number(row.ideal_cmv) || 32,
+            active: row.active !== false,
+          }
+        : { id: membership.company_id },
+    };
+  } catch {
+    // Schema ainda não aplicado / rede: não derruba o boot com erro técnico.
+    return null;
+  }
+}
+
+async function hydrateSupabaseSession(authUser) {
+  const membership = await fetchSupabaseMembership(authUser.id);
+  const user = mapSupabaseUser(authUser, membership);
+  if (!user) {
+    clearSession();
+    return { user: null, company: null };
+  }
+
+  const company =
+    user.role === ROLES.PLATFORM_SUPER_ADMIN
+      ? null
+      : membership?.company || (user.companyId ? { id: user.companyId } : null);
+
+  saveSession(user, company);
+  return { user, company };
+}
+
+/**
+ * Restaura sessão no boot do app.
+ * Demo: sanitiza localStorage. Cloud: valida getSession() do Supabase.
+ */
+export async function restoreSession() {
+  if (!isSupabaseEnabled) {
+    return loadStoredSession();
+  }
+
+  const client = getSupabaseClient();
+  if (!client) {
+    clearSession();
+    return { user: null, company: null };
+  }
+
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    if (!data.session?.user) {
+      clearSession();
+      return { user: null, company: null };
+    }
+    return hydrateSupabaseSession(data.session.user);
+  } catch {
+    clearSession();
+    return { user: null, company: null };
+  }
 }
 
 /**
@@ -122,24 +245,23 @@ export async function login({ email, password }) {
     email: email.trim(),
     password,
   });
-  if (error) throw new Error(error.message || 'Não foi possível entrar.');
+  if (error) throw new Error(mapAuthError(error));
 
-  const user = {
-    id: data.user.id,
-    email: data.user.email,
-    name: data.user.user_metadata?.full_name || data.user.email,
-    role: ROLES.COMPANY_ADMIN,
-    companyId: null,
-  };
-  saveSession(user, null);
-  return { user, company: null, session: data.session };
+  const hydrated = await hydrateSupabaseSession(data.user);
+  return { ...hydrated, session: data.session };
 }
 
 export async function logout() {
   clearSession();
   if (isSupabaseEnabled) {
     const client = getSupabaseClient();
-    await client.auth.signOut();
+    if (client) {
+      try {
+        await client.auth.signOut();
+      } catch {
+        // sessão local já limpa
+      }
+    }
   }
 }
 
@@ -148,7 +270,7 @@ export async function logout() {
  */
 export async function register(payload) {
   if (isSupabaseEnabled) {
-    throw new Error('Cadastro via Supabase será habilitado com o backend.');
+    throw new Error(mapAuthError({ message: 'Cadastro via Supabase será habilitado com o backend.' }));
   }
 
   const ownerName = String(payload.ownerName || '').trim();
