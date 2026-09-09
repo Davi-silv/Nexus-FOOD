@@ -40,9 +40,10 @@ describe('auth.register', () => {
     const stored = findAuthUserByEmail('joao@novaburger.local');
     expect(stored.companyId).toBe(result.company.id);
     expect(getCompanyProfile(result.company.id).tradeName).toBe('Nova Burger');
-    expect(listPlatformCompanies().some((c) => c.id === result.company.id)).toBe(true);
 
     clearSession();
+    expect(listPlatformCompanies().some((c) => c.id === result.company.id)).toBe(true);
+
     const again = await login({ email: 'joao@novaburger.local', password: 'senha123' });
     expect(again.company.id).toBe(result.company.id);
   });

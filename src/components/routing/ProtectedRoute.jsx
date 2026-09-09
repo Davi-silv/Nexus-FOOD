@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Skeleton } from '@/components/ui/Skeleton.jsx';
 import { ROLES } from '@/config/roles.config.js';
+import { getSupportTenantAccess } from '@/services/company.service.js';
 
 function AuthBootScreen() {
   return (
@@ -19,6 +20,9 @@ function AuthBootScreen() {
 export function ProtectedRoute({ requirePlatformAdmin = false, permission }) {
   const { user, company, isAuthenticated, loading, isPlatformAdmin, canAccess } = useAuth();
   const location = useLocation();
+  const support = getSupportTenantAccess();
+  const supportMode =
+    isPlatformAdmin && support?.companyId && company?.id && support.companyId === company.id;
 
   if (loading) {
     return <AuthBootScreen />;
@@ -32,11 +36,10 @@ export function ProtectedRoute({ requirePlatformAdmin = false, permission }) {
     return <Navigate to="/" replace />;
   }
 
-  if (!requirePlatformAdmin && isPlatformAdmin && !location.pathname.startsWith('/admin')) {
+  if (!requirePlatformAdmin && isPlatformAdmin && !location.pathname.startsWith('/admin') && !supportMode) {
     return <Navigate to="/admin" replace />;
   }
 
-  // Sessão cloud sem empresa vinculada: não liberar módulos do restaurante.
   if (
     !requirePlatformAdmin &&
     !isPlatformAdmin &&

@@ -1,6 +1,12 @@
 import { PLANS } from '@/config/plans.config.js';
 import { DEMO_COMPANY, DEMO_USERS } from '@/data/demo.js';
+import { assertPlatformAdminSession, getSessionActor } from '@/services/company.service.js';
 import { uid } from '@/core/utils/helpers.js';
+
+function guardPlatformWhenAuthenticated() {
+  const user = getSessionActor();
+  if (user) assertPlatformAdminSession();
+}
 
 const STORAGE_KEY = 'nexus-food:platform:companies';
 const USERS_KEY = 'nexus-food:platform:users';
@@ -123,14 +129,17 @@ function ensurePlatformUsers() {
 }
 
 export function listPlatformCompanies() {
+  guardPlatformWhenAuthenticated();
   return ensureCompanies().slice().sort((a, b) => a.tradeName.localeCompare(b.tradeName));
 }
 
 export function getPlatformCompany(id) {
+  guardPlatformWhenAuthenticated();
   return ensureCompanies().find((c) => c.id === id) || null;
 }
 
 export function createPlatformCompany(payload) {
+  guardPlatformWhenAuthenticated();
   const rows = ensureCompanies();
   const now = new Date().toISOString();
   const plan = PLANS[payload.planSlug] || PLANS.start;
@@ -159,6 +168,7 @@ export function createPlatformCompany(payload) {
 }
 
 export function registerPlatformUser(payload) {
+  guardPlatformWhenAuthenticated();
   const rows = ensurePlatformUsers();
   const row = {
     id: payload.id,
@@ -174,6 +184,7 @@ export function registerPlatformUser(payload) {
 }
 
 export function updatePlatformCompany(id, patch) {
+  guardPlatformWhenAuthenticated();
   const rows = ensureCompanies();
   const idx = rows.findIndex((c) => c.id === id);
   if (idx < 0) throw new Error('Empresa não encontrada.');
@@ -212,6 +223,7 @@ export function listPlatformSubscriptions() {
 }
 
 export function listPlatformUsers() {
+  guardPlatformWhenAuthenticated();
   return ensurePlatformUsers();
 }
 
@@ -220,6 +232,7 @@ export function listPlansCatalog() {
 }
 
 export function getPlatformStats() {
+  guardPlatformWhenAuthenticated();
   const companies = listPlatformCompanies();
   const users = listPlatformUsers();
   const active = companies.filter((c) => c.status === 'active' && c.subscriptionStatus === 'active');
@@ -238,11 +251,13 @@ export function getPlatformStats() {
 }
 
 export function listSupportLogs() {
+  guardPlatformWhenAuthenticated();
   return read(SUPPORT_KEY, []);
 }
 
 /** Registro auditado de acesso técnico a uma empresa */
 export function logSupportAccess({ adminUserId, adminName, companyId, companyName, reason }) {
+  guardPlatformWhenAuthenticated();
   if (!companyId || !reason?.trim()) {
     throw new Error('Informe a empresa e o motivo do acesso.');
   }

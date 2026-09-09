@@ -5,6 +5,7 @@ import { listSuppliers, listIngredientPriceHistory } from '@/services/suppliers.
 import { listPurchases } from '@/services/purchases.service.js';
 import { listProducts } from '@/services/products.service.js';
 import { listRecipes } from '@/services/recipes.service.js';
+import { requireCompanyAccess } from '@/services/company.service.js';
 
 export const REPORT_TYPES = [
   { key: 'finance', label: 'Financeiro' },
@@ -74,6 +75,8 @@ function inRange(dateStr, range) {
  * @returns {{ type, range, title, kpis, columns, rows, summary }}
  */
 export function buildReport(companyId, type, { preset = 'month', from = '', to = '', idealCmv = 32 } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) {
     return emptyReport(type, resolveDateRange(preset, from, to));
   }

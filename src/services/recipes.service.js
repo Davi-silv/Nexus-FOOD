@@ -1,5 +1,5 @@
 import { DEMO_RECIPES, isDemoCompany } from '@/data/demo.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import {
   registerIngredientCostHandler,
   registerProductPriceHandler,
@@ -173,6 +173,8 @@ export function listRecipeCostHistory(companyId, { recipeId, limit = 50 } = {}) 
 }
 
 export function listRecipes(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   const raw = readRawRecipes(companyId);
   const { ingredientsById, productsById } = mapsForCompany(companyId);
   return raw
@@ -189,6 +191,8 @@ export function getRecipeByProduct(companyId, productId) {
 }
 
 export function saveRecipe(companyId, payload, { recipeId = null } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const validated = validateRecipe(payload);
   if (!validated.ok) {
@@ -272,6 +276,8 @@ export function saveRecipe(companyId, payload, { recipeId = null } = {}) {
 
 export function deleteRecipe(companyId, id) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const rows = readRawRecipes(companyId);
   const index = rows.findIndex((r) => r.id === id);
   if (index < 0) throw new Error('Ficha técnica não encontrada.');
@@ -291,6 +297,7 @@ export function recalculateRecipesAffectedByIngredient(
   { previousIngredientCost = null, newIngredientCost = null } = {},
 ) {
   if (!companyId || !ingredientId) return [];
+  requireCompanyAccess(companyId);
   const rows = readRawRecipes(companyId);
   const { ingredientsById, productsById } = mapsForCompany(companyId);
   const affected = [];
@@ -331,6 +338,8 @@ export function recalculateRecipesAffectedByIngredient(
 }
 
 export function recalculateRecipesAffectedByProduct(companyId, productId) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId || !productId) return null;
   const rows = readRawRecipes(companyId);
   const index = rows.findIndex((r) => r.productId === productId);

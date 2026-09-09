@@ -1,5 +1,5 @@
 import { isDemoCompany } from '@/data/demo.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import { listIngredients } from '@/services/ingredients.service.js';
 import { validateSupplier } from '@/validations/supplier.validation.js';
 import { uid } from '@/core/utils/helpers.js';
@@ -121,6 +121,7 @@ function seedPriceHistory(companyId) {
 
 export function listSuppliers(companyId) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
   let rows = readJson(suppliersKey(companyId), null);
   if (rows === null) {
     if (isDemoCompany(companyId)) {
@@ -144,6 +145,8 @@ export function getSupplier(companyId, id) {
 }
 
 export function createSupplier(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const validated = validateSupplier(payload);
   if (!validated.ok) {
@@ -176,6 +179,8 @@ export function createSupplier(companyId, payload) {
 
 export function updateSupplier(companyId, id, payload) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const rows = listSuppliers(companyId);
   const index = rows.findIndex((r) => r.id === id);
   if (index < 0) throw new Error('Fornecedor não encontrado.');
@@ -206,6 +211,8 @@ export function deactivateSupplier(companyId, id) {
 
 export function listIngredientPriceHistory(companyId, { ingredientId, limit = 50 } = {}) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
+  if (!companyId) return [];
   // ensure suppliers seed (also seeds price history)
   listSuppliers(companyId);
   let rows = readJson(priceHistoryKey(companyId), []) || [];
@@ -233,6 +240,7 @@ export function recordIngredientPriceChange(
   },
 ) {
   if (!companyId || !ingredientId) return null;
+  requireCompanyAccess(companyId);
   const prev = Number(previousCost) || 0;
   const next = Number(newCost) || 0;
   if (Math.abs(prev - next) < 0.0001) return null;

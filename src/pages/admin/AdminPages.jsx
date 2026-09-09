@@ -13,6 +13,7 @@ import { PLANS } from '@/config/plans.config.js';
 import { formatMoney } from '@/core/utils/money.js';
 import {
   createPlatformCompany,
+  getPlatformCompany,
   getPlatformStats,
   listPlansCatalog,
   listPlatformCompanies,
@@ -23,6 +24,9 @@ import {
   setCompanyStatus,
   updatePlatformCompany,
 } from '@/services/platform.service.js';
+import { beginSupportTenantAccess, clearSupportTenantAccess, getSupportTenantAccess } from '@/services/company.service.js';
+import { getCompanyProfile } from '@/services/settings.service.js';
+import { useNavigate } from 'react-router-dom';
 
 function statusTone(status) {
   if (status === 'active') return 'success';
@@ -318,35 +322,68 @@ export function AdminPlansPage() {
 }
 
 export function AdminSupportPage() {
-  const { user } = useAuth();
+  const { user, setActiveCompany, company } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
   const [tick, setTick] = useState(0);
-  const companies = useMemo(() => listPlatformCompanies(), []);
+  const companies = useMemo(() => listPlatformCompanies(), [tick]);
   const logs = useMemo(() => listSupportLogs(), [tick]);
+  const support = useMemo(() => getSupportTenantAccess(), [tick, company?.id]);
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
   const [reason, setReason] = useState('');
 
   function handleLog(e) {
     e.preventDefault();
     try {
-      const company = companies.find((c) => c.id === companyId);
+      const platformCompany = companies.find((c) => c.id === companyId);
+      beginSupportTenantAccess({
+        companyId,
+        reason,
+        adminUserId: user?.id,
+        adminName: user?.name,
+      });
       logSupportAccess({
         adminUserId: user?.id,
         adminName: user?.name,
         companyId,
-        companyName: company?.tradeName,
+        companyName: platformCompany?.tradeName,
         reason,
       });
-      toast.success('Acesso registrado na auditoria.');
+      const profile = getCompanyProfile(companyId) || getPlatformCompany(companyId);
+      setActiveCompany(profile);
+      toast.success('Modo suporte ativo. Dados do cliente liberados com auditoria.');
       setReason('');
       setTick((t) => t + 1);
+      navigate('/');
     } catch (err) {
       toast.error(err.message || 'Não foi possível registrar.');
     }
   }
 
+  function handleEndSupport() {
+    clearSupportTenantAccess();
+    setActiveCompany(null);
+    setTick((t) => t + 1);
+    toast.info('Modo suporte encerrado.');
+    navigate('/admin/suporte');
+  }
+
   return (
     <AppShell title="Suporte" subtitle="Acesso técnico controlado com auditoria">
+      {support?.companyId ? (
+        <Card className="mb-3">
+          <CardHeader
+            title="Modo suporte ativo"
+            subtitle={`${support.companyId} — ${support.reason}`}
+            action={
+              <Button type="button" variant="secondary" onClick={handleEndSupport}>
+                Encerrar suporte
+              </Button>
+            }
+          />
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader title="Registrar acesso" subtitle="Obrigatório antes de abrir dados de um cliente" />
         <form className="form-grid" onSubmit={handleLog}>
@@ -371,7 +408,7 @@ export function AdminSupportPage() {
             />
           </label>
           <div className="span-2">
-            <Button type="submit">Registrar acesso</Button>
+            <Button type="submit">Ativar modo suporte</Button>
           </div>
         </form>
       </Card>

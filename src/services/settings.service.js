@@ -1,6 +1,7 @@
 import { DEMO_COMPANY } from '@/data/demo.js';
 import { STORAGE_KEYS } from '@/core/constants.js';
 import { DEFAULT_BRAND, isValidHexColor, normalizeBrand } from '@/services/branding.service.js';
+import { requireCompanyAccess } from '@/services/company.service.js';
 
 function key(companyId) {
   return `nexus-food:settings:${companyId}`;
@@ -67,6 +68,7 @@ export function getCompanyProfile(companyId) {
 
 export function updateCompanyProfile(companyId, payload) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
 
   const errors = {};
   const name = String(payload.name ?? '').trim();

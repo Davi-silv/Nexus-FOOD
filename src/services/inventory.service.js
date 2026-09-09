@@ -1,5 +1,5 @@
 import { INVENTORY_MOVEMENT_TYPES } from '@/core/constants.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import { registerIngredientCreatedHandler } from '@/services/domain-events.js';
 import {
   adjustIngredientStock,
@@ -59,6 +59,8 @@ function toIngredientUnit(quantity, fromUnit, ingredientUnit) {
 }
 
 export function listInventoryMovements(companyId, { ingredientId, limit = 100 } = {}) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   let rows = readMovements(companyId)
     .slice()
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -67,6 +69,8 @@ export function listInventoryMovements(companyId, { ingredientId, limit = 100 } 
 }
 
 export function listStockPositions(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   const ingredients = listIngredients(companyId).filter((i) => i.status === 'active');
   const movements = readMovements(companyId);
 
@@ -119,6 +123,8 @@ export function listStockPositions(companyId) {
  * Nunca altera estoque sem gerar histórico.
  */
 export function createInventoryMovement(companyId, payload, { createdBy = null } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
 
   const validated = validateInventoryMovement(payload);
@@ -230,6 +236,7 @@ export function applySaleConsumption(
   { productId, quantity, saleId = null, createdBy = null, allowPartial = false } = {},
 ) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   const soldQty = Number(quantity);
   if (!Number.isFinite(soldQty) || soldQty <= 0) {
     throw new Error('Quantidade vendida inválida.');
@@ -280,6 +287,8 @@ export function applySaleConsumption(
 }
 
 export function getInventoryStats(companyId) {
+  if (!companyId) return { stockValue: 0, criticalCount: 0, lowCount: 0 };
+  requireCompanyAccess(companyId);
   const positions = listStockPositions(companyId);
   return {
     totalItems: positions.length,

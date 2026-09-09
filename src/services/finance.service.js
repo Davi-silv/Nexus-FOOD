@@ -1,5 +1,5 @@
 import { isDemoCompany } from '@/data/demo.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import {
   validateFinanceCategory,
   validatePayable,
@@ -161,6 +161,7 @@ function ensureSeed(companyId) {
 
 export function listFinanceCategories(companyId, type = null) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
   ensureSeed(companyId);
   let rows = (read(companyId, 'categories', []) || []).filter((c) => c.companyId === companyId);
   if (type) rows = rows.filter((c) => c.type === type);
@@ -168,6 +169,8 @@ export function listFinanceCategories(companyId, type = null) {
 }
 
 export function listTransactions(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   if (!companyId) return [];
   ensureSeed(companyId);
   return (read(companyId, 'transactions', []) || [])
@@ -177,6 +180,8 @@ export function listTransactions(companyId) {
 }
 
 export function createTransaction(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   ensureSeed(companyId);
   const validated = validateTransaction(payload);
@@ -199,6 +204,8 @@ export function createTransaction(companyId, payload) {
 }
 
 export function deleteTransaction(companyId, id) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   const rows = listTransactions(companyId);
   const found = rows.find((r) => r.id === id);
   if (!found) throw new Error('Lançamento não encontrado.');
@@ -212,6 +219,8 @@ export function deleteTransaction(companyId, id) {
 
 export function listPayables(companyId) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
+  if (!companyId) return [];
   ensureSeed(companyId);
   return (read(companyId, 'payables', []) || [])
     .filter((p) => p.companyId === companyId)
@@ -220,6 +229,8 @@ export function listPayables(companyId) {
 }
 
 export function createPayable(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   ensureSeed(companyId);
   const validated = validatePayable(payload);
@@ -242,6 +253,8 @@ export function createPayable(companyId, payload) {
 }
 
 export function markPayablePaid(companyId, id, { paymentDate = null, paymentMethod = 'pix' } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   const rows = listPayables(companyId);
   const index = rows.findIndex((p) => p.id === id);
   if (index < 0) throw new Error('Conta a pagar não encontrada.');
@@ -275,6 +288,8 @@ export function markPayablePaid(companyId, id, { paymentDate = null, paymentMeth
 
 export function listReceivables(companyId) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
+  if (!companyId) return [];
   ensureSeed(companyId);
   return (read(companyId, 'receivables', []) || [])
     .filter((r) => r.companyId === companyId)
@@ -283,6 +298,8 @@ export function listReceivables(companyId) {
 }
 
 export function createReceivable(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   ensureSeed(companyId);
   const validated = validateReceivable(payload);
@@ -351,6 +368,8 @@ function isToday(dateStr) {
 }
 
 export function getFinanceSummary(companyId) {
+  if (!companyId) return { incomeToday: 0, incomeMonth: 0, expenseMonth: 0, balanceMonth: 0, payablesPending: 0, receivablesPending: 0, txsCount: 0 };
+  requireCompanyAccess(companyId);
   const txs = listTransactions(companyId);
   const payables = listPayables(companyId);
   const receivables = listReceivables(companyId);
@@ -390,6 +409,8 @@ export function getFinanceSummary(companyId) {
 
 /** Série diária de receitas dos últimos N dias */
 export function getRevenueSeries(companyId, days = 7) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   const txs = listTransactions(companyId).filter((t) => t.type === 'income');
   const series = [];
   for (let i = days - 1; i >= 0; i -= 1) {
@@ -412,6 +433,8 @@ export function resetFinance(companyId) {
 
 // create category helper for future UI
 export function createFinanceCategory(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   ensureSeed(companyId);
   const validated = validateFinanceCategory(payload);
   if (!validated.ok) {

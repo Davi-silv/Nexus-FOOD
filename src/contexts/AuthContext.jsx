@@ -14,6 +14,10 @@ import { STORAGE_KEYS } from '@/core/constants.js';
 import { isSupabaseEnabled } from '@/config/supabase.config.js';
 import { getSupabaseClient } from '@/lib/supabase.js';
 import { applyCompanyBrand, clearCompanyBrand } from '@/services/branding.service.js';
+import {
+  assertCanActivateCompany,
+  clearSupportTenantAccess,
+} from '@/services/company.service.js';
 
 const AuthContext = createContext(null);
 
@@ -119,16 +123,21 @@ export function AuthProvider({ children }) {
 
   async function logout() {
     await logoutService();
+    clearSupportTenantAccess();
     setUser(null);
     setCompany(null);
     clearCompanyBrand();
   }
 
   function setActiveCompany(next) {
+    assertCanActivateCompany(user, next);
     setCompany(next);
     if (next) {
       localStorage.setItem(STORAGE_KEYS.company, JSON.stringify(next));
       applyCompanyBrand(next);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.company);
+      clearCompanyBrand();
     }
   }
 

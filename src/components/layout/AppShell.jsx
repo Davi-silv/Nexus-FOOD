@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { cn } from '@/core/utils/helpers.js';
 import { resolveCompanyBrand } from '@/services/branding.service.js';
+import { getSupportTenantAccess } from '@/services/company.service.js';
 import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
 
 export function AppShell({ children, title, subtitle }) {
@@ -16,17 +17,25 @@ export function AppShell({ children, title, subtitle }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const navItems = isPlatformAdmin
-    ? ADMIN_NAV
-    : RESTAURANT_NAV.filter((item) => canAccess(item.permission));
+  const support = getSupportTenantAccess();
+  const supportMode =
+    isPlatformAdmin && support?.companyId && company?.id && support.companyId === company.id;
 
-  const brand = resolveCompanyBrand(isPlatformAdmin ? null : company);
-  const displayName = !isPlatformAdmin
+  const navItems = supportMode
+    ? RESTAURANT_NAV
+    : isPlatformAdmin
+      ? ADMIN_NAV
+      : RESTAURANT_NAV.filter((item) => canAccess(item.permission));
+
+  const brand = resolveCompanyBrand(supportMode || !isPlatformAdmin ? company : null);
+  const displayName = supportMode || !isPlatformAdmin
     ? company?.tradeName || company?.name || APP_CONFIG.name
     : APP_CONFIG.name;
-  const displayOwner = !isPlatformAdmin
-    ? brand.brandTagline || APP_CONFIG.name
-    : APP_CONFIG.brand;
+  const displayOwner = supportMode
+    ? `Suporte · ${support.reason}`
+    : !isPlatformAdmin
+      ? brand.brandTagline || APP_CONFIG.name
+      : APP_CONFIG.brand;
 
   async function handleLogout() {
     await logout();
@@ -58,10 +67,10 @@ export function AppShell({ children, title, subtitle }) {
           </button>
         </div>
 
-        {!isPlatformAdmin && company ? (
+        {(supportMode || (!isPlatformAdmin && company)) ? (
           <div className="sidebar__company">
-            <span className="sidebar__company-label">Empresa</span>
-            <strong>{company.tradeName || company.name}</strong>
+            <span className="sidebar__company-label">{supportMode ? 'Suporte em' : 'Empresa'}</span>
+            <strong>{company?.tradeName || company?.name}</strong>
           </div>
         ) : null}
 

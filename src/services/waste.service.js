@@ -3,6 +3,7 @@ import { createInventoryMovement } from '@/services/inventory.service.js';
 import { getIngredient, listIngredients } from '@/services/ingredients.service.js';
 import { validateWaste } from '@/validations/waste.validation.js';
 import { uid } from '@/core/utils/helpers.js';
+import { requireCompanyAccess } from '@/services/company.service.js';
 
 function wasteKey(companyId) {
   return `nexus-food:waste:${companyId}`;
@@ -31,6 +32,8 @@ function startOfDay(d) {
 }
 
 export function listWasteRecords(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   listIngredients(companyId);
   return readWaste(companyId)
     .slice()
@@ -38,6 +41,8 @@ export function listWasteRecords(companyId) {
 }
 
 export function createWasteRecord(companyId, payload, { createdBy = null } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
 
   const validated = validateWaste(payload);
@@ -103,6 +108,8 @@ export function createWasteRecord(companyId, payload, { createdBy = null } = {})
 }
 
 export function getWasteStats(companyId) {
+  if (!companyId) return { month: 0, ranking: [] };
+  requireCompanyAccess(companyId);
   const records = listWasteRecords(companyId);
   const today = startOfDay(new Date());
   const weekAgo = new Date(today);

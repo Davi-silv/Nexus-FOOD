@@ -1,5 +1,5 @@
 import { DEMO_INGREDIENTS, isDemoCompany } from '@/data/demo.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import {
   emitIngredientCostChanged,
   emitIngredientCreated,
@@ -48,6 +48,7 @@ function seedForCompany(companyId) {
  */
 export function listIngredients(companyId) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
   let rows = readAll(companyId);
   if (rows === null) {
     rows = isDemoCompany(companyId) ? seedForCompany(companyId) : [];
@@ -68,6 +69,8 @@ export function getIngredient(companyId, id) {
  * @param {Record<string, unknown>} payload
  */
 export function createIngredient(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const validated = validateIngredient(payload);
   if (!validated.ok) {
@@ -105,6 +108,8 @@ export function createIngredient(companyId, payload) {
  * @param {Record<string, unknown>} payload
  */
 export function updateIngredient(companyId, id, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const rows = listIngredients(companyId);
   const index = rows.findIndex((r) => r.id === id);
@@ -161,6 +166,8 @@ export function updateIngredient(companyId, id, payload) {
  */
 export function adjustIngredientStock(companyId, id, { quantity, lastPurchaseAt } = {}) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const rows = listIngredients(companyId);
   const index = rows.findIndex((r) => r.id === id);
   if (index < 0) throw new Error('Ingrediente não encontrado.');
@@ -191,6 +198,8 @@ export function adjustIngredientStock(companyId, id, { quantity, lastPurchaseAt 
  */
 export function deactivateIngredient(companyId, id) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const rows = listIngredients(companyId);
   const index = rows.findIndex((r) => r.id === id);
   if (index < 0) throw new Error('Ingrediente não encontrado.');
@@ -208,6 +217,8 @@ export function deactivateIngredient(companyId, id) {
 }
 
 export function reactivateIngredient(companyId, id) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   return updateIngredient(companyId, id, { status: 'active' });
 }
 

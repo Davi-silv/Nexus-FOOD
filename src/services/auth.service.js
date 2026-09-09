@@ -19,6 +19,7 @@ import {
   mapSupabaseUser,
   resolvePostLoginPath,
 } from '@/services/auth-session.util.js';
+import { clearSupportTenantAccess } from '@/services/company.service.js';
 
 export { getHomePath, mapAuthError, resolvePostLoginPath };
 
@@ -233,6 +234,9 @@ export async function login({ email, password }) {
     if (!match || match.password !== password || match.active === false) {
       throw new Error('E-mail ou senha inválidos.');
     }
+    // Evita amarrar o novo login a um tenant da sessão anterior.
+    clearSession();
+    clearSupportTenantAccess();
     const user = toPublicUser(match);
     const company =
       user.role === ROLES.PLATFORM_SUPER_ADMIN ? null : resolveCompanyForUser(user, null);
@@ -253,6 +257,7 @@ export async function login({ email, password }) {
 
 export async function logout() {
   clearSession();
+  clearSupportTenantAccess();
   if (isSupabaseEnabled) {
     const client = getSupabaseClient();
     if (client) {
@@ -272,6 +277,9 @@ export async function register(payload) {
   if (isSupabaseEnabled) {
     throw new Error(mapAuthError({ message: 'Cadastro via Supabase será habilitado com o backend.' }));
   }
+
+  clearSession();
+  clearSupportTenantAccess();
 
   const ownerName = String(payload.ownerName || '').trim();
   const email = String(payload.email || '').trim().toLowerCase();

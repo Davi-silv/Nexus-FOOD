@@ -4,6 +4,7 @@ import {
   ROLES,
 } from '@/config/roles.config.js';
 import { DEMO_COMPANY, DEMO_USERS } from '@/data/demo.js';
+import { requireCompanyAccess } from '@/services/company.service.js';
 import { uid } from '@/core/utils/helpers.js';
 
 function key(companyId) {
@@ -106,6 +107,8 @@ export const PERMISSION_LABELS = {
 };
 
 export function listCompanyUsers(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   return ensure(companyId)
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -159,6 +162,8 @@ export function findAuthUserById(id) {
 
 export function createCompanyUser(companyId, payload) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const name = String(payload.name || '').trim();
   const email = String(payload.email || '').trim().toLowerCase();
   const password = String(payload.password || '').trim();
@@ -200,6 +205,8 @@ export function createCompanyUser(companyId, payload) {
 }
 
 export function updateCompanyUser(companyId, id, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   const rows = ensure(companyId);
   const idx = rows.findIndex((u) => u.id === id);
   if (idx < 0) throw new Error('Usuário não encontrado.');
@@ -259,6 +266,8 @@ export function updateCompanyUser(companyId, id, payload) {
 }
 
 export function deactivateCompanyUser(companyId, id) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   return updateCompanyUser(companyId, id, { active: false });
 }
 

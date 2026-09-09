@@ -4,6 +4,7 @@ import { getWasteStats } from '@/services/waste.service.js';
 import { listRecipes } from '@/services/recipes.service.js';
 import { listProducts } from '@/services/products.service.js';
 import { DEMO_DASHBOARD, isDemoCompany } from '@/data/demo.js';
+import { requireCompanyAccess } from '@/services/company.service.js';
 
 /**
  * Agrega KPIs reais do restaurante.
@@ -11,6 +12,7 @@ import { DEMO_DASHBOARD, isDemoCompany } from '@/data/demo.js';
  */
 export function getRestaurantDashboard(companyId, { idealCmv = 32 } = {}) {
   if (!companyId) return { ...DEMO_DASHBOARD, source: 'empty' };
+  requireCompanyAccess(companyId);
 
   const finance = getFinanceSummary(companyId);
   const inventory = getInventoryStats(companyId);

@@ -1,4 +1,4 @@
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import { createInventoryMovement } from '@/services/inventory.service.js';
 import {
   getIngredient,
@@ -35,6 +35,8 @@ function writePurchases(companyId, rows) {
 }
 
 export function listPurchases(companyId) {
+  if (!companyId) return [];
+  requireCompanyAccess(companyId);
   return readPurchases(companyId)
     .slice()
     .sort((a, b) => String(b.purchaseDate).localeCompare(String(a.purchaseDate)));
@@ -45,6 +47,8 @@ export function listPurchases(companyId) {
  * estoque + custo + histórico de preço + recálculo de fichas (via updateIngredient).
  */
 export function createPurchase(companyId, payload, { createdBy = null } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   listSuppliers(companyId);
   listIngredients(companyId);
@@ -190,6 +194,8 @@ function applyPurchaseEffects(companyId, purchase, { createdBy } = {}) {
  * Confirma compra pendente aplicando efeitos.
  */
 export function confirmPurchase(companyId, purchaseId, { createdBy = null } = {}) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   const rows = readPurchases(companyId);
   const index = rows.findIndex((p) => p.id === purchaseId);
   if (index < 0) throw new Error('Compra não encontrada.');

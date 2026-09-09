@@ -1,5 +1,5 @@
 import { DEMO_PRODUCTS, isDemoCompany } from '@/data/demo.js';
-import { assertCompanyScope } from '@/services/company.service.js';
+import { assertCompanyScope, requireCompanyAccess } from '@/services/company.service.js';
 import { emitProductPriceChanged } from '@/services/domain-events.js';
 import { validateProduct } from '@/validations/product.validation.js';
 import { uid } from '@/core/utils/helpers.js';
@@ -40,6 +40,7 @@ function seedForCompany(companyId) {
 
 export function listProducts(companyId) {
   if (!companyId) return [];
+  requireCompanyAccess(companyId);
   let rows = readAll(companyId);
   if (rows === null) {
     rows = isDemoCompany(companyId) ? seedForCompany(companyId) : [];
@@ -56,6 +57,8 @@ export function getProduct(companyId, id) {
 }
 
 export function createProduct(companyId, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const validated = validateProduct(payload);
   if (!validated.ok) {
@@ -87,6 +90,8 @@ export function createProduct(companyId, payload) {
 }
 
 export function updateProduct(companyId, id, payload) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   if (!companyId) throw new Error('Empresa não definida.');
   const rows = listProducts(companyId);
   const index = rows.findIndex((r) => r.id === id);
@@ -135,6 +140,8 @@ export function updateProduct(companyId, id, payload) {
 
 export function deactivateProduct(companyId, id) {
   if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
+  if (!companyId) throw new Error('Empresa não definida.');
   const rows = listProducts(companyId);
   const index = rows.findIndex((r) => r.id === id);
   if (index < 0) throw new Error('Produto não encontrado.');
@@ -153,6 +160,8 @@ export function deactivateProduct(companyId, id) {
 }
 
 export function reactivateProduct(companyId, id) {
+  if (!companyId) throw new Error('Empresa não definida.');
+  requireCompanyAccess(companyId);
   return updateProduct(companyId, id, { status: 'active', available: true });
 }
 
