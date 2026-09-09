@@ -1,11 +1,33 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { APP_CONFIG } from '@/config/app.config.js';
+import { DEMO_USERS } from '@/data/demo.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useToast } from '@/contexts/ToastContext.jsx';
 import { Button } from '@/components/ui/Button.jsx';
 import { isPlatformAdmin } from '@/config/roles.config.js';
 import { PwaInstallButton } from '@/components/pwa/PwaInstallBanner.jsx';
+
+const DEMO_ACCOUNTS = [
+  {
+    key: 'admin',
+    label: 'Admin restaurante (dados preenchidos)',
+    email: DEMO_USERS.admin.email,
+    password: DEMO_USERS.admin.password,
+  },
+  {
+    key: 'employee',
+    label: 'Funcionário (sem financeiro)',
+    email: DEMO_USERS.employee.email,
+    password: DEMO_USERS.employee.password,
+  },
+  {
+    key: 'super',
+    label: 'Super Admin (painel Evolutiva)',
+    email: DEMO_USERS.superAdmin.email,
+    password: DEMO_USERS.superAdmin.password,
+  },
+];
 
 export function LoginPage() {
   const { login, isAuthenticated, user } = useAuth();
@@ -14,22 +36,41 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   if (isAuthenticated) {
     return <Navigate to={isPlatformAdmin(user?.role) ? '/admin' : '/'} replace />;
+  }
+
+  async function authenticate(nextEmail, nextPassword) {
+    const result = await login({ email: nextEmail, password: nextPassword });
+    toast.success('Login realizado com sucesso.');
+    navigate(isPlatformAdmin(result.user.role) ? '/admin' : '/');
+    return result;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await login({ email, password });
-      toast.success('Login realizado com sucesso.');
-      navigate(isPlatformAdmin(result.user.role) ? '/admin' : '/');
+      await authenticate(email, password);
     } catch (err) {
       toast.error(err.message || 'Não foi possível entrar.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function enterDemoRestaurant() {
+    setDemoLoading(true);
+    setEmail(DEMO_USERS.admin.email);
+    setPassword(DEMO_USERS.admin.password);
+    try {
+      await authenticate(DEMO_USERS.admin.email, DEMO_USERS.admin.password);
+    } catch (err) {
+      toast.error(err.message || 'Não foi possível abrir a demonstração.');
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -42,6 +83,24 @@ export function LoginPage() {
           <h1>{APP_CONFIG.name}</h1>
           <p>{APP_CONFIG.slogan}</p>
         </div>
+
+        {APP_CONFIG.features.demoMode ? (
+          <div className="login-demo-hero">
+            <p className="login-demo-hero__title">Conta demonstração ativa</p>
+            <p className="login-demo-hero__text">
+              Hamburgueria Nexus com ingredientes, fichas, estoque e financeiro preenchidos para
+              apresentar o sistema.
+            </p>
+            <Button
+              type="button"
+              className="w-full"
+              loading={demoLoading}
+              onClick={enterDemoRestaurant}
+            >
+              Entrar na demonstração
+            </Button>
+          </div>
+        ) : null}
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
@@ -64,8 +123,8 @@ export function LoginPage() {
               required
             />
           </label>
-          <Button type="submit" className="w-full" loading={loading}>
-            Entrar
+          <Button type="submit" className="w-full" loading={loading} variant="secondary">
+            Entrar com minha conta
           </Button>
         </form>
 
@@ -79,41 +138,21 @@ export function LoginPage() {
 
         {APP_CONFIG.features.demoMode ? (
           <div className="login-demo">
-            <p>Modo demo — contas de teste:</p>
+            <p>Outras contas de teste:</p>
             <ul>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin@nexusfood.local');
-                    setPassword('admin');
-                  }}
-                >
-                  Admin restaurante → admin@nexusfood.local / admin
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('estoque@nexusfood.local');
-                    setPassword('estoque');
-                  }}
-                >
-                  Funcionário → estoque@nexusfood.local / estoque
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('super@evolutivatech.com.br');
-                    setPassword('super');
-                  }}
-                >
-                  Super Admin → super@evolutivatech.com.br / super
-                </button>
-              </li>
+              {DEMO_ACCOUNTS.map((account) => (
+                <li key={account.key}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail(account.email);
+                      setPassword(account.password);
+                    }}
+                  >
+                    {account.label} → {account.email} / {account.password}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         ) : null}
