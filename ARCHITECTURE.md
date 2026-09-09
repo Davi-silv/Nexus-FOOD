@@ -45,4 +45,6 @@ suppliers · purchases · waste_records · sales · ingredient_price_history
 
 - Nunca expor `service_role_key` no frontend
 - Apenas `VITE_SUPABASE_ANON_KEY`
-- RLS obrigatório antes de produção cloud
+- RLS obrigatório antes de produção cloud (`001`–`008`, com `FORCE ROW LEVEL SECURITY`)
+- Isolamento: `company_id` + policies + triggers anti cross-tenant
+- Platform admin no SQL continua membro implícito (suporte); o client exige modo suporte auditado
